@@ -5,6 +5,11 @@
 ### AndroidStudio ###
 # Covers files to be ignored for android development using Android Studio.
 
+#forder
+Library/
+Temp/
+.vs/
+
 # Built application files
 *.apk
 *.ap_
