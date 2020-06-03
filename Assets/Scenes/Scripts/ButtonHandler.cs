@@ -23,8 +23,10 @@ public class ButtonHandler : MonoBehaviour
         CreateGesture();    //creates an initial gesture. it will be removed when user input implements.
 
         text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
-                                    $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
-                                    "(At least 20 are recommended.)";
+                                    $"Samples : {GestureManager.Instance.CurrentSampleCount}\n" +
+                                    "(At least 20 samples are recommended)\n\n" +
+                                    "The sample will be recorded\n" +
+                                    "while [Perform] is pressed.";
         text_GestureList.text = "";
     }
 
@@ -39,8 +41,11 @@ public class ButtonHandler : MonoBehaviour
 
         if (testMode)
         {
-            text_Notification.text = $"Identified Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
+            if (GestureManager.Instance.CurrentGestureID >= 0)
+                text_Notification.text = $"Identified Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
                                     $"Confidence {similarity * 100:0.00}%";
+            else
+                text_Notification.text = "Identification fails.\nPlease retry.";
         }
         else
         {

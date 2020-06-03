@@ -53,6 +53,7 @@ public class GestureManager : MonoBehaviour
     enum GestureID { None = -1 }
     private int currentGestureID = (int)GestureID.None;
     
+    public int CurrentGestureID { get { return currentGestureID; } }
     public string CurrentGestureName { get { return gr.getGestureName(currentGestureID); } }
     public string GetGestureName(int index) => gr.getGestureName(index);
     public int CurrentSampleCount { get { return gr.getGestureNumberOfSamples(currentGestureID); } }
@@ -63,8 +64,9 @@ public class GestureManager : MonoBehaviour
     private System.Random random = new System.Random();
     private readonly string[] tempGestureSuggestions = new string[]
     {   //temp list for demo test. it will be replaced by user suggestions(using textbox input).
-        "Circle", "Square", "Star", "TiltLeft", "TiltRight", "UpDown"
+        "Circle", "Square", "Star", "TiltLeft", "TiltRight", "UpDown", "Check"
     };
+    private int anythingIndex = 1;
 
     //Afterwards, need to input gesture suggest by user, not system.
     //So, ex) SaveList, LoadList, Register(by user input)... functions will be required.
@@ -78,9 +80,10 @@ public class GestureManager : MonoBehaviour
                 gestureList.Add(tempGestureSuggestions[i]);
             }
         }
+
         if (gestureList.Count == 0)
         {
-            return random.Next(0, 1000).ToString();
+            return "Anything" + anythingIndex++;
         }
         int index = random.Next(0, gestureList.Count);
         string randomWord = gestureList[index];
@@ -114,6 +117,7 @@ public class GestureManager : MonoBehaviour
         isPerforming = false;
         gr.deleteAllGestures();
         currentGestureID = (int)GestureID.None;
+        anythingIndex = 1;
 
         gestureList = new List<string>();
         for (int i = 0; i < tempGestureSuggestions.Length; i++)
@@ -125,6 +129,9 @@ public class GestureManager : MonoBehaviour
     public void Register()  //it may need a strnig as parameter when user input implements.
     {
         currentGestureID = gr.createGesture(GetGestureSuggestion());
+
+        if (currentGestureID < 0)   //when function returns negative, creation fails. retry.
+            Register();
     }
 
     public void StartRead(bool isIdentificationMode = false)    //true : just read, false : for a sample.
