@@ -8,6 +8,7 @@
 #forder
 Library/
 Temp/
+Packages/
 .vs/
 
 # Built application files
