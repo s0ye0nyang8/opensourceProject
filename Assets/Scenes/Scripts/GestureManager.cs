@@ -1,5 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using AOT;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class GestureManager : MonoBehaviour
 {
@@ -47,9 +52,11 @@ public class GestureManager : MonoBehaviour
     }
     #endregion
 
+    private GCHandle handle;
     private GestureRecognition gr = new GestureRecognition();
     private List<string> gestureList = null;    //list for created gestures. it will include gestures from save files.
     private bool isPerforming = false;  //for distinguish "continue" gesture step. 3steps : "start" -> "continue" -> "end"
+    private bool canSave = false;   //notify state that is able to save the file when train is complete.
     enum GestureID { None = -1 }
     private int currentGestureID = (int)GestureID.None;
     
@@ -96,6 +103,11 @@ public class GestureManager : MonoBehaviour
     private void Start()
     {
         Input.gyro.enabled = true;
+        handle = GCHandle.Alloc(this);
+        gr.setTrainingUpdateCallback(trainingUpdateCallback);
+        gr.setTrainingUpdateCallbackMetadata((IntPtr)handle);
+        gr.setTrainingFinishCallback(trainingFinishCallback);
+        gr.setTrainingFinishCallbackMetadata((IntPtr)handle);
         Initialize();
     }
 
@@ -115,6 +127,7 @@ public class GestureManager : MonoBehaviour
     public void Initialize()
     {
         isPerforming = false;
+        canSave = false;
         gr.deleteAllGestures();
         currentGestureID = (int)GestureID.None;
         anythingIndex = 1;
@@ -169,5 +182,99 @@ public class GestureManager : MonoBehaviour
         else
             // handling in case "failed" needs to implement. use callback???
             return false;
+    }
+
+    public bool Save()
+    {
+        string trainedData = "gestureSuggestions.dat";
+        string trainedDataPath;
+
+        if (canSave)
+        {
+#if UNITY_EDITOR
+            trainedDataPath = "Assets/Data";
+#elif UNITY_ANDROID
+            trainedDataPath = Application.persistentDataPath;
+#else
+            trainedDataPath = Application.streamingAssetsPath;
+#endif
+            if (gr.saveToFile($"{trainedDataPath}/{trainedData}"))
+            {
+                canSave = false;
+                Debug.Log($"Save completed.\n{trainedDataPath}/{trainedData} is created.");
+                return true;
+            }
+            else
+            {
+                Debug.Log("Save failed.");
+                return false;
+            }
+        }
+        else
+        {
+            Debug.Log("Current state can't be saved.");
+            return false;
+        }
+    }
+    public bool Load()
+    {
+        string trainedData = "gestureSuggestions.dat";
+        string trainedDataPath;
+
+#if UNITY_EDITOR
+        trainedDataPath = "Assets/Data";
+#elif UNITY_ANDROID
+        var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+        var unityWebRequest = UnityWebRequest.Get($"{Application.streamingAssetsPath}/trainedData");
+        trainedDataPath = activity.Call<AndroidJavaObject>("getCacheDir").Call<string>("getCanonicalPath");
+
+        unityWebRequest.SendWebRequest();
+
+        while (!unityWebRequest.isDone)
+        {
+            // wait for file extraction to finish
+        }
+        if (unityWebRequest.isNetworkError)
+        {
+            // Failed to extract sample gesture database file from apk
+            return;
+        }
+        File.WriteAllBytes($"{trainedDataPath}/{trainedData}", unityWebRequest.downloadHandler.data);
+#else
+        trainedDataPath = Application.streamingAssetsPath;
+#endif
+        if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
+        {
+            Debug.Log("Load completed");
+            return true;
+        }
+        else
+        {
+            Debug.Log("Load failed");
+            return false;
+        }
+    }
+
+    [MonoPInvokeCallback(typeof(GestureRecognition.TrainingCallbackFunction))]
+    public static void trainingUpdateCallback(double performance, IntPtr ptr)
+    {
+        // Get the script/scene object back from metadata.
+        GCHandle obj = (GCHandle)ptr;
+        GestureManager me = obj.Target as GestureManager;
+        // Update the performance indicator with the latest estimate.
+        //me.last_performance_report = performance;
+    }
+
+    [MonoPInvokeCallback(typeof(GestureRecognition.TrainingCallbackFunction))]
+    public static void trainingFinishCallback(double performance, IntPtr ptr)
+    {
+        var gestureManager = ((GCHandle)ptr).Target as GestureManager;
+        // Update the performance indicator with the latest estimate.
+        //me.last_performance_report = performance;
+        // Signal that training was finished.
+        //me.recording_gesture = -3;
+
+        gestureManager.canSave = true;
     }
 }
