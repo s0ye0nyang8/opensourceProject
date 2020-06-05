@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,9 +9,13 @@ public class ButtonHandler : MonoBehaviour
     private Button button_Undo, button_Create, button_Train;    //for toggle "interactable"
     private Text text_Notification, text_GestureList;
     private bool testMode = false;
+    private delegate void ModeChangedHandler();
+    private event ModeChangedHandler ModeChanged;
 
     private void Start()
     {
+        ModeChanged += OnModeChanged;
+
         button_Undo = GameObject.Find("Button_Undo").GetComponent<Button>();
         button_Undo.interactable = false;
         button_Create = GameObject.Find("Button_Create").GetComponent<Button>();
@@ -84,6 +89,7 @@ public class ButtonHandler : MonoBehaviour
     public void CreateGesture()
     {
         testMode = false;
+        ModeChanged();
 
         GestureManager.Instance.Register();
         text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
@@ -96,6 +102,8 @@ public class ButtonHandler : MonoBehaviour
         if (GestureManager.Instance.TryTrain())
         {
             testMode = true;
+            ModeChanged();
+
             button_Undo.interactable = false;
             button_Train.interactable = false;
 
@@ -115,5 +123,50 @@ public class ButtonHandler : MonoBehaviour
     {
         GestureManager.Instance.Initialize();
         Start();
+    }
+
+    public void SaveGesturesToFile()
+    {
+        if (GestureManager.Instance.Save())
+        {
+            text_Notification.text = "Saving trained data succeeded.";
+        }
+        else
+        {
+            text_Notification.text = "Saving trained data failed.";
+        }
+    }
+
+    public void LoadGesturesFromFile()
+    {
+        if (GestureManager.Instance.Load())
+        {
+            testMode = true;
+            ModeChanged();
+
+            text_Notification.text = "Loading trained data succeeded.\n";
+            text_GestureList.text = "Recorded Gesture :\n";
+            for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
+                text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+            text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+        }
+        else
+        {
+            text_Notification.text = "Trained data to load does not exist.";
+        }
+    }
+
+    private void OnModeChanged()
+    {
+        var buttonPerformText = GameObject.Find("Button_Perform").GetComponentInChildren<Text>();
+
+        if (testMode)
+        {
+            buttonPerformText.text = "Test";
+        }
+        else
+        {
+            buttonPerformText.text = "Perform";
+        }
     }
 }
