@@ -6,9 +6,11 @@ using UnityEngine.UI;
 
 public class ButtonHandler : MonoBehaviour
 {
-    private Button button_Undo, button_Create, button_Train;    //for toggle "interactable"
+    private Button button_Perform, button_Undo, button_Create, button_Train;    //for toggle "interactable"
     private Text text_Notification, text_GestureList;
+    private GameObject panel_CreateDialog;
     private bool testMode = false;
+
     private delegate void ModeChangedHandler();
     private event ModeChangedHandler ModeChanged;
 
@@ -16,20 +18,20 @@ public class ButtonHandler : MonoBehaviour
     {
         ModeChanged += OnModeChanged;
 
+        button_Perform = GameObject.Find("Button_Perform").GetComponent<Button>();
+        button_Perform.interactable = false;
         button_Undo = GameObject.Find("Button_Undo").GetComponent<Button>();
         button_Undo.interactable = false;
         button_Create = GameObject.Find("Button_Create").GetComponent<Button>();
-        button_Create.interactable = false;
         button_Train = GameObject.Find("Button_Train").GetComponent<Button>();
         button_Train.interactable = false;
         text_Notification = GameObject.Find("Text_Notification").GetComponent<Text>();
         text_GestureList = GameObject.Find("Text_GestureList").GetComponent<Text>();
+        panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
 
-        CreateGesture();    //creates an initial gesture. it will be removed when user input implements.
+        //CreateGesture();    //creates an initial gesture. it will be removed when user input implements.
 
-        text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
-                                    $"Samples : {GestureManager.Instance.CurrentSampleCount}\n" +
-                                    "(At least 20 samples are recommended)\n\n" +
+        text_Notification.text = "Register new gesture through [Create].\n\n" +
                                     "The sample will be recorded\n" +
                                     "while [Perform] is pressed.";
         text_GestureList.text = "";
@@ -37,11 +39,17 @@ public class ButtonHandler : MonoBehaviour
 
     public void StartGesture()
     {
+        if (!button_Perform.interactable)
+            return;
+
         GestureManager.Instance.StartRead(testMode);
     }
 
     public void StopGesture()
     {
+        if (!button_Perform.interactable)
+            return;
+
         double similarity = GestureManager.Instance.EndRead();
 
         if (testMode)
@@ -86,12 +94,33 @@ public class ButtonHandler : MonoBehaviour
         }
     }
 
-    public void CreateGesture()
+    public void OpenCreateDialog()
     {
+        if (panel_CreateDialog != null)
+        {
+            panel_CreateDialog.SetActive(true);
+        }
+    }
+
+    public void CloseCreateDialog()
+    {
+        if (panel_CreateDialog != null)
+        {
+            panel_CreateDialog.SetActive(false);
+        }
+    }
+
+    public void Confirm()
+    {
+        var inputfield_GestureName = GameObject.Find("InputField_GestureName").GetComponent<InputField>();
+
+        GestureManager.Instance.Register(inputfield_GestureName.text);
+        inputfield_GestureName.text = "";
+        CloseCreateDialog();
+
+        button_Perform.interactable = true;
         testMode = false;
         ModeChanged();
-
-        GestureManager.Instance.Register();
         text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
                                     $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
@@ -140,6 +169,25 @@ public class ButtonHandler : MonoBehaviour
     public void LoadGesturesFromFile()
     {
         if (GestureManager.Instance.Load())
+        {
+            testMode = true;
+            ModeChanged();
+
+            text_Notification.text = "Loading trained data succeeded.\n";
+            text_GestureList.text = "Recorded Gesture :\n";
+            for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
+                text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+            text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+        }
+        else
+        {
+            text_Notification.text = "Trained data to load does not exist.";
+        }
+    }
+
+    public void LoadGesturesFromDefaultFile()
+    {
+        if (GestureManager.Instance.LoadDefault())
         {
             testMode = true;
             ModeChanged();

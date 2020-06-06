@@ -139,12 +139,13 @@ public class GestureManager : MonoBehaviour
         }
     }
 
-    public void Register()  //it may need a strnig as parameter when user input implements.
+    public void Register(string name)  //it may need a strnig as parameter when user input implements.
     {
-        currentGestureID = gr.createGesture(GetGestureSuggestion());
+        // currentGestureID = gr.createGesture(GetGestureSuggestion());
+        currentGestureID = gr.createGesture(name);
 
         if (currentGestureID < 0)   //when function returns negative, creation fails. retry.
-            Register();
+            Register(name);
     }
 
     public void StartRead(bool isIdentificationMode = false)    //true : just read, false : for a sample.
@@ -216,19 +217,18 @@ public class GestureManager : MonoBehaviour
             return false;
         }
     }
-    public bool Load()
+    public bool LoadDefault()
     {
         string trainedData = "gestureSuggestions.dat";
         string trainedDataPath;
 
 #if UNITY_EDITOR
-        trainedDataPath = "Assets/Data";
+        trainedDataPath = "Assets/StreamingAssets";
 #elif UNITY_ANDROID
         var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
         var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-        var unityWebRequest = UnityWebRequest.Get($"{Application.streamingAssetsPath}/trainedData");
+        var unityWebRequest = UnityWebRequest.Get($"{Application.streamingAssetsPath}/{trainedData}");
         trainedDataPath = activity.Call<AndroidJavaObject>("getCacheDir").Call<string>("getCanonicalPath");
-
         unityWebRequest.SendWebRequest();
 
         while (!unityWebRequest.isDone)
@@ -237,10 +237,34 @@ public class GestureManager : MonoBehaviour
         }
         if (unityWebRequest.isNetworkError)
         {
-            // Failed to extract sample gesture database file from apk
-            return;
+            Debug.Log("Load failed. Network must be connected for loading the default data.");
+            return false;
         }
         File.WriteAllBytes($"{trainedDataPath}/{trainedData}", unityWebRequest.downloadHandler.data);
+#else
+        trainedDataPath = Application.streamingAssetsPath;
+#endif
+        if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
+        {
+            Debug.Log("Load completed");
+            return true;
+        }
+        else
+        {
+            Debug.Log("Load failed");
+            return false;
+        }
+    }
+
+    public bool Load()
+    {
+        string trainedData = "gestureSuggestions.dat";
+        string trainedDataPath;
+
+#if UNITY_EDITOR
+        trainedDataPath = "Assets/Data";
+#elif UNITY_ANDROID
+        trainedDataPath = Application.persistentDataPath;
 #else
         trainedDataPath = Application.streamingAssetsPath;
 #endif
