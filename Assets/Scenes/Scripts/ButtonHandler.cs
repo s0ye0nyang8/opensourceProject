@@ -8,11 +8,17 @@ public class ButtonHandler : MonoBehaviour
 {
     private Button button_Perform, button_Undo, button_Create, button_Train;    //for toggle "interactable"
     private Text text_Notification, text_GestureList;
+    private Text paneltext;
     private GameObject panel_CreateDialog;
     private bool testMode = false;
 
     private delegate void ModeChangedHandler();
     private event ModeChangedHandler ModeChanged;
+
+    public Image defaultimg;
+    public Sprite offimage;
+    public Sprite onimage;
+    public GameObject train_panel;
 
     private void Start()
     {
@@ -28,6 +34,8 @@ public class ButtonHandler : MonoBehaviour
         text_Notification = GameObject.Find("Text_Notification").GetComponent<Text>();
         text_GestureList = GameObject.Find("Text_GestureList").GetComponent<Text>();
         panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
+        train_panel = GameObject.Find("Panel");
+        paneltext = GameObject.Find("PText").GetComponent<Text>();
 
         //CreateGesture();    //creates an initial gesture. it will be removed when user input implements.
 
@@ -37,11 +45,23 @@ public class ButtonHandler : MonoBehaviour
         text_GestureList.text = "";
     }
 
+    public void ChangeImage(bool a)
+    {
+        if (a)
+        {
+            defaultimg.sprite = onimage;
+        }
+        else
+        {
+            defaultimg.sprite = offimage;
+        }
+    }
     public void StartGesture()
     {
+
         if (!button_Perform.interactable)
             return;
-
+        ChangeImage(true);
         GestureManager.Instance.StartRead(testMode);
     }
 
@@ -49,7 +69,7 @@ public class ButtonHandler : MonoBehaviour
     {
         if (!button_Perform.interactable)
             return;
-
+        ChangeImage(false);
         double similarity = GestureManager.Instance.EndRead();
 
         if (testMode)
@@ -125,9 +145,24 @@ public class ButtonHandler : MonoBehaviour
                                     $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
     }
+    public void PanelExit()
+    {
+        train_panel.SetActive(false);
+    }
+
+    public void ShowRecords()
+    {
+        train_panel.SetActive(false);
+        // another panel;;;
+        paneltext.text = "Recorded Gesture :\n";
+        for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
+            paneltext.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+        paneltext.text = text_GestureList.text.TrimEnd(',', ' ');
+    }
 
     public void TrainGesture()
     {
+        train_panel.SetActive(false);
         if (GestureManager.Instance.TryTrain())
         {
             testMode = true;
@@ -136,11 +171,9 @@ public class ButtonHandler : MonoBehaviour
             button_Undo.interactable = false;
             button_Train.interactable = false;
 
-            text_Notification.text = "Training finished.\n\nPerform : Identify the recorded gesture.\nCreate : Add another gesture.";
-            text_GestureList.text = "Recorded Gesture :\n";
-            for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
-                text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
-            text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+            paneltext.text = "..Training finished. CONTINUE?\n(At least 20 are recommended)";
+            train_panel.SetActive(true);
+
         }
         else
         {
