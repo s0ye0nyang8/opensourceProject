@@ -9,7 +9,9 @@ public class ButtonHandler : MonoBehaviour
     private Button button_Perform, button_Undo, button_Create, button_Train;    //for toggle "interactable"
     private Text text_Notification, text_GestureList;
     private Text paneltext;
+    
     private GameObject panel_CreateDialog;
+    private GameObject load_panel;
     private bool testMode = false;
 
     private delegate void ModeChangedHandler();
@@ -18,7 +20,6 @@ public class ButtonHandler : MonoBehaviour
     public Image defaultimg;
     public Sprite offimage;
     public Sprite onimage;
-    public GameObject train_panel;
 
     private void Start()
     {
@@ -33,9 +34,12 @@ public class ButtonHandler : MonoBehaviour
         button_Train.interactable = false;
         text_Notification = GameObject.Find("Text_Notification").GetComponent<Text>();
         text_GestureList = GameObject.Find("Text_GestureList").GetComponent<Text>();
+
         panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
-        train_panel = GameObject.Find("Panel");
-        paneltext = GameObject.Find("PText").GetComponent<Text>();
+        load_panel = GameObject.Find("load_panel");
+
+        //paneltext = GameObject.Find("PText").GetComponent<Text>();
+        //motions = GameObject.Find("PText2").GetComponent<Text>();
 
         //CreateGesture();    //creates an initial gesture. it will be removed when user input implements.
 
@@ -58,7 +62,6 @@ public class ButtonHandler : MonoBehaviour
     }
     public void StartGesture()
     {
-
         if (!button_Perform.interactable)
             return;
         ChangeImage(true);
@@ -89,6 +92,7 @@ public class ButtonHandler : MonoBehaviour
             text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
                                     $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
+            SaveGesturesToFile();
         }
     }
 
@@ -122,21 +126,13 @@ public class ButtonHandler : MonoBehaviour
         }
     }
 
-    public void CloseCreateDialog()
-    {
-        if (panel_CreateDialog != null)
-        {
-            panel_CreateDialog.SetActive(false);
-        }
-    }
-
     public void Confirm()
     {
         var inputfield_GestureName = GameObject.Find("InputField_GestureName").GetComponent<InputField>();
 
         GestureManager.Instance.Register(inputfield_GestureName.text);
         inputfield_GestureName.text = "";
-        CloseCreateDialog();
+        //CloseCreateDialog();
 
         button_Perform.interactable = true;
         testMode = false;
@@ -145,24 +141,30 @@ public class ButtonHandler : MonoBehaviour
                                     $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
     }
-    public void PanelExit()
+    public void closePanel()
     {
-        train_panel.SetActive(false);
+        if (panel_CreateDialog != null)
+        {
+            panel_CreateDialog.SetActive(false);
+        }
+
+        if (load_panel != null)
+        {
+            load_panel.SetActive(false);
+        }
     }
 
     public void ShowRecords()
     {
-        train_panel.SetActive(false);
         // another panel;;;
-        paneltext.text = "Recorded Gesture :\n";
+        text_GestureList.text = "Recorded Gesture :\n";
         for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
-            paneltext.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
-        paneltext.text = text_GestureList.text.TrimEnd(',', ' ');
+            text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+        text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
     }
 
     public void TrainGesture()
     {
-        train_panel.SetActive(false);
         if (GestureManager.Instance.TryTrain())
         {
             testMode = true;
@@ -172,7 +174,6 @@ public class ButtonHandler : MonoBehaviour
             button_Train.interactable = false;
 
             paneltext.text = "..Training finished. CONTINUE?\n(At least 20 are recommended)";
-            train_panel.SetActive(true);
 
         }
         else
@@ -191,11 +192,11 @@ public class ButtonHandler : MonoBehaviour
     {
         if (GestureManager.Instance.Save())
         {
-            text_Notification.text = "Saving trained data succeeded.";
+            text_Notification.text = "Saved.";
         }
         else
         {
-            text_Notification.text = "Saving trained data failed.";
+            text_Notification.text = "Failed.";
         }
     }
 
