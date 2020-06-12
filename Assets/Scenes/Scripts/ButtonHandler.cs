@@ -9,11 +9,19 @@ public class ButtonHandler : MonoBehaviour
 {
     private Button button_Perform, button_Undo, button_Create, button_Train;    //for toggle "interactable"
     private Text text_Notification, text_GestureList;
+    private Text paneltext;
+
     private GameObject panel_CreateDialog;
-    private bool testMode = false;
+    private GameObject load_panel;
+
+    private bool isIdentificationMode = false;
 
     private delegate void ModeChangedHandler();
     private event ModeChangedHandler ModeChanged;
+
+    public Image defaultimg;
+    public Sprite offimage;
+    public Sprite onimage;
 
     private void Start()
     {
@@ -30,9 +38,12 @@ public class ButtonHandler : MonoBehaviour
         button_Train.interactable = false;
         text_Notification = GameObject.Find("Text_Notification").GetComponent<Text>();
         text_GestureList = GameObject.Find("Text_GestureList").GetComponent<Text>();
-        panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
 
-        //CreateGesture();    //creates an initial gesture. it will be removed when user input implements.
+        panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
+        load_panel = GameObject.Find("load_panel");
+        //paneltext = GameObject.Find("PText").GetComponent<Text>();
+        //motions = GameObject.Find("PText2").GetComponent<Text>();
+
 
         text_Notification.text = "Register new gesture through [Create].\n\n" +
                                     "The sample will be recorded\n" +
@@ -40,25 +51,39 @@ public class ButtonHandler : MonoBehaviour
         text_GestureList.text = "";
     }
 
+    public void ChangeImage(bool a)
+    {
+        if (a)
+        {
+            defaultimg.sprite = onimage;
+        }
+        else
+        {
+            defaultimg.sprite = offimage;
+        }
+    }
+
     public void StartGesture()
     {
         if (!button_Perform.interactable)
             return;
+        ChangeImage(true);
 
-        GestureManager.Instance.StartRead(testMode);
+        GestureManager.Instance.StartRead(isIdentificationMode);
     }
 
     public void StopGesture()
     {
         if (!button_Perform.interactable)
             return;
+        ChangeImage(false);
 
-        double similarity = GestureManager.Instance.EndRead();
-
-        if (testMode)
+        int identifiedIndex = GestureManager.Instance.EndRead();
+        if (isIdentificationMode)
         {
-            if (GestureManager.Instance.CurrentGestureID >= 0)
-                text_Notification.text = $"Identified Gesture : {GestureManager.Instance.CurrentGestureName}\n";
+            var currentGesture = GestureManager.Instance.GestureList[identifiedIndex];
+            if (identifiedIndex >= 0)
+                text_Notification.text = $"Identified Gesture : {currentGesture.Name}\n";
             else
                 text_Notification.text = "Identification fails.\nPlease retry.";
         }
@@ -68,32 +93,24 @@ public class ButtonHandler : MonoBehaviour
             button_Create.interactable = true;
             button_Train.interactable = true;
 
-            text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
-                                    $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
+            var currentGesture = GestureManager.Instance.GetRecentGesture;
+            text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
+                                    $"Samples : {currentGesture.SampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
+
+            //SaveGesturesToFile();
         }
     }
 
     public void UndoLastGesture()
     {
-        if (GestureManager.Instance.CurrentSampleCount > 0)
-        {
-            GestureManager.Instance.DeleteLastSample();
-            text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
-                                        $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
-                                        "(At least 20 are recommended.)";
-        }
+        int lastGestureIndex = GestureManager.Instance.GestureList.Count - 1;
+        GestureManager.Instance.DeleteLastSample(lastGestureIndex);
 
-        if (GestureManager.Instance.CurrentSampleCount == 0)
-        {
-            button_Undo.interactable = false;
-
-            if (GestureManager.Instance.GestureCount <= 1)
-            {
-                button_Create.interactable = false;
-                button_Train.interactable = false;
-            }
-        }
+        var currentGesture = GestureManager.Instance.GetRecentGesture;
+        text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
+                                    $"Samples : {currentGesture.SampleCount}\n\n" +
+                                    "(At least 20 are recommended.)";
     }
 
     public void OpenCreateDialog()
@@ -112,25 +129,46 @@ public class ButtonHandler : MonoBehaviour
         }
     }
 
-    public void Confirm()
+    public void ConfirmCreateDialog()
     {
         var inputfield_GestureName = GameObject.Find("InputField_GestureName").GetComponent<InputField>();
-
         GestureManager.Instance.Register(inputfield_GestureName.text);
         inputfield_GestureName.text = "";
+
         CloseCreateDialog();
 
         button_Perform.interactable = true;
-        testMode = false;
+        isIdentificationMode = false;
         ModeChanged();
-        text_Notification.text = $"Target Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
-                                    $"Samples : {GestureManager.Instance.CurrentSampleCount}\n\n" +
+
+        var currentGesture = GestureManager.Instance.GetRecentGesture;
+        text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
+                                    $"Samples : {currentGesture.SampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
     }
 
-    private void Update()
+    public void closePanel()
     {
+        if (panel_CreateDialog != null)
+        {
+            panel_CreateDialog.SetActive(false);
+        }
+
+        if (load_panel != null)
+        {
+            load_panel.SetActive(false);
+        }
     }
+
+    public void ShowRecords()
+    {
+        // another panel;;;
+        text_GestureList.text = "Recorded Gesture :\n";
+        for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
+            text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
+        text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+    }
+
 
     public void TrainGesture()
     {
@@ -166,13 +204,13 @@ public class ButtonHandler : MonoBehaviour
 
     private IEnumerator ChangeUIWhenTrainingCompleted(double rate)
     {
-        testMode = true;
+        isIdentificationMode = true;
         ModeChanged();
 
         text_Notification.text = "Training finished.\n\nTest : Identify the recorded gesture.\nCreate : Add another gesture.";
         text_GestureList.text = "Recorded Gesture :\n";
-        for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
-            text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+        for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
+            text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
         text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
 
         button_Perform.interactable = true;
@@ -190,7 +228,7 @@ public class ButtonHandler : MonoBehaviour
 
     public void SaveGesturesToFile()
     {
-        if (GestureManager.Instance.Save())
+        if (GestureManager.Instance.SaveTrainedData())
         {
             text_Notification.text = "Saving trained data succeeded.";
         }
@@ -202,16 +240,16 @@ public class ButtonHandler : MonoBehaviour
 
     public void LoadGesturesFromFile()
     {
-        if (GestureManager.Instance.Load())
+        if (GestureManager.Instance.LoadCustomTrainedData())
         {
             button_Perform.interactable = true;
-            testMode = true;
+            isIdentificationMode = true;
             ModeChanged();
 
             text_Notification.text = "Loading trained data succeeded.\n";
             text_GestureList.text = "Recorded Gesture :\n";
-            for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
-                text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+            for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
+                text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
             text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
         }
         else
@@ -222,16 +260,16 @@ public class ButtonHandler : MonoBehaviour
 
     public void LoadGesturesFromDefaultFile()
     {
-        if (GestureManager.Instance.LoadDefault())
+        if (GestureManager.Instance.LoadDeafaultTrainedData())
         {
             button_Perform.interactable = true;
-            testMode = true;
+            isIdentificationMode = true;
             ModeChanged();
 
             text_Notification.text = "Loading trained data succeeded.\n";
             text_GestureList.text = "Recorded Gesture :\n";
-            for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
-                text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+            for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
+                text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
             text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
         }
         else
@@ -244,7 +282,7 @@ public class ButtonHandler : MonoBehaviour
     {
         var buttonPerformText = GameObject.Find("Button_Perform").GetComponentInChildren<Text>();
 
-        if (testMode)
+        if (isIdentificationMode)
         {
             buttonPerformText.text = "Test";
         }

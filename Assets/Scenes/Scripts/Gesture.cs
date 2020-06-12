@@ -4,13 +4,13 @@ using UnityEngine;
 
 public class Gesture
 {
-    public int Index;
+    public int SampleCount;
     public string Name;
     public string Audio;
 
-    public Gesture(int index = -1, string name = "", string audio = "")
+    public Gesture(string name = "", int sampleCount = 0, string audio = "")
     {
-        Index = index;
+        SampleCount = sampleCount;
         Name = name;
         Audio = audio;
     }

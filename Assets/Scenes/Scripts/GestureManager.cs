@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Networking;
 
 public class GestureManager : MonoBehaviour
@@ -58,15 +59,11 @@ public class GestureManager : MonoBehaviour
     private bool isPerforming = false;  //for distinguish "continue" gesture step. 3steps : "start" -> "continue" -> "end"
     private bool canSave = false;   //notify state that is able to save the file when train is complete.
     enum GestureID { None = -1 }
-    private int currentGestureID = (int)GestureID.None;
+
     private List<Gesture> gestureList;
 
     public ReadOnlyCollection<Gesture> GestureList { get { return gestureList.AsReadOnly(); } }
-    public int CurrentGestureID { get { return currentGestureID; } }    //index of recent identified or recording gesture.
-    public string CurrentGestureName { get { return gr.getGestureName(currentGestureID); } }
-    public string GetGestureName(int index) => gr.getGestureName(index);
-    public int CurrentSampleCount { get { return gr.getGestureNumberOfSamples(currentGestureID); } }
-    public int GestureCount { get { return gr.numberOfGestures(); } }
+    public Gesture GetRecentGesture { get { return gestureList[gestureList.Count - 1]; } }
 
     public delegate void TrainingEventDelegate(double performance);
     public event TrainingEventDelegate OnTrainingInProgress;
@@ -104,19 +101,17 @@ public class GestureManager : MonoBehaviour
         canSave = false;
 
         gr.deleteAllGestures();
-        currentGestureID = (int)GestureID.None;
     }
 
     public void Register(string name)  //it may need a strnig as parameter when user input implements.
     {
-        int index = gr.createGesture(name);
-
-        //gestureList.Add(new Gesture(index, name));
+        gr.createGesture(name);
+        gestureList.Add(new Gesture(name));
     }
 
     //isIdentificationMode : true, just read. false, for a sample.
     //index : if it is positive, add new sample to already existed gesture in index.
-    public void StartRead(bool isIdentificationMode = false, int index = (int)GestureID.None)
+    public void StartRead(bool isIdentificationMode = false)
     {
         isPerforming = true;
         Vector3 p = new Vector3(0.0f, 0.0f, 0.0f);
@@ -126,16 +121,27 @@ public class GestureManager : MonoBehaviour
             gr.startStroke(p, q);
         else
         {
-            if (index < 0)
-                gr.startStroke(p, q, currentGestureID);
-            else if (index < gr.numberOfGestures())
-                gr.startStroke(p, q, index);
-            else
-            {
-                isPerforming = false;
-                Debug.Log("There's not the corresponding index to add the sample.");
-            }
+            int index = gestureList.Count - 1;
+            gr.startStroke(p, q, index); //for the gesture created recently.
+            gestureList[index].SampleCount++;
+
         }
+    }
+
+    public void StartReadAt(int index) //for collecting samples of gestures from specific index.
+    {
+        if (index < 0 || index >= gr.numberOfGestures())
+        {
+            Debug.Log($"There's not the corresponding index {index} to add the sample.");
+            return;
+        }
+
+        isPerforming = true;
+        Vector3 p = new Vector3(0.0f, 0.0f, 0.0f);
+        Quaternion q = new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+
+        gr.startStroke(p, q, index);
+        gestureList[index].SampleCount++;
     }
 
     private void ContinueRead()
@@ -148,36 +154,44 @@ public class GestureManager : MonoBehaviour
                     + $"grav = {q.x:0.00} {q.y:0.00} {q.z:0.00}");
     }
 
-    public double EndRead()
+    public int EndRead()
     {
         double similarity = 0;
-
+        int identifiedGestureIndex = gr.endStroke(ref similarity);
         isPerforming = false;
-        currentGestureID = gr.endStroke(ref similarity);
 
-        return similarity;  //will be used by external class when identifying the gesture.
+        //increase recognition rate using similarity??
+
+        return identifiedGestureIndex;  //will be used by external class when identifying the gesture.
     }
 
     public bool Delete(int index)
     {
         bool isDeleted = gr.deleteGesture(index);
-
         if (isDeleted)
-        {
             gestureList.RemoveAt(index);
-        }
 
         return isDeleted;
     }
 
-    public bool DeleteLastSample()
-    {
-        return gr.deleteGestureSample(currentGestureID, CurrentSampleCount - 1);
-    }
-
     public bool DeleteLastSample(int index)
     {
-        return gr.deleteGestureSample(index, CurrentSampleCount - 1);
+        bool isDeleted = gr.deleteGestureSample(index, gr.getGestureNumberOfSamples(index) - 1);
+        if (isDeleted)
+            gestureList[index].SampleCount--;
+
+        Debug.Log($"{gr.getGestureNumberOfSamples(index)}");
+
+        return isDeleted;
+    }
+
+    public bool DeleteAllSamples(int index)
+    {
+        bool isDeleted = gr.deleteAllGestureSamples(index);
+        if (isDeleted)
+            gestureList[index].SampleCount = 0;
+
+        return isDeleted;
     }
 
     public bool TryTrain() //depending on samples, it can fail.
@@ -191,7 +205,7 @@ public class GestureManager : MonoBehaviour
             // handling in case "failed" needs to implement. use callback???
             return false;
     }
-    public bool Save()
+    public bool SaveTrainedData()
     {
         string trainedData = "gestureSuggestions.dat";
         string trainedDataPath;
@@ -223,7 +237,8 @@ public class GestureManager : MonoBehaviour
             return false;
         }
     }
-    public bool LoadDefault()   //load default gesture suggestions file in Assets/StreamingAssets/
+
+    public bool LoadDeafaultTrainedData()   //load default gesture suggestions file in Assets/StreamingAssets/
     {
         string trainedData = "gestureSuggestions.dat";
         string trainedDataPath;
@@ -253,10 +268,11 @@ public class GestureManager : MonoBehaviour
         if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
         {
             Debug.Log("Load completed");
-            //for (int i = 0; i < gr.numberOfGestures(); i++)
-            //{
-            //    gestureList.Add(new Gesture(i, gr.getGestureName(i)));
-            //}
+            gestureList = new List<Gesture>();
+            for (int i = 0; i < gr.numberOfGestures(); i++)
+            {
+                gestureList.Add(new Gesture(gr.getGestureName(i), gr.getGestureNumberOfSamples(i)));
+            }
 
             return true;
         }
@@ -267,7 +283,7 @@ public class GestureManager : MonoBehaviour
         }
     }
 
-    public bool Load()
+    public bool LoadCustomTrainedData()
     {
         string trainedData = "gestureSuggestions.dat";
         string trainedDataPath;
@@ -282,10 +298,11 @@ public class GestureManager : MonoBehaviour
         if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
         {
             Debug.Log("Load completed");
-            //for (int i = 0; i < gr.numberOfGestures(); i++)
-            //{
-            //    gestureList.Add(new Gesture(i, gr.getGestureName(i)));
-            //}
+            gestureList = new List<Gesture>();
+            for (int i = 0; i < gr.numberOfGestures(); i++)
+            {
+                gestureList.Add(new Gesture(gr.getGestureName(i), gr.getGestureNumberOfSamples(i)));
+            }
 
             return true;
         }
@@ -302,7 +319,7 @@ public class GestureManager : MonoBehaviour
         var gestureManager = ((GCHandle)ptr).Target as GestureManager;
         gestureManager.OnTrainingInProgress(rate);
 
-        Debug.Log($"Training in progress... {rate}%");
+        Debug.Log($"Training in progress... {rate * 100:00.00}%");
     }
 
     [MonoPInvokeCallback(typeof(GestureRecognition.TrainingCallbackFunction))]
