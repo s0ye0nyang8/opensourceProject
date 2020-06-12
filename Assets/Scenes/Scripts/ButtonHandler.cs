@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +18,8 @@ public class ButtonHandler : MonoBehaviour
     private void Start()
     {
         ModeChanged += OnModeChanged;
+        GestureManager.Instance.OnTrainingInProgress += NotifyTrainingInProgress;
+        GestureManager.Instance.OnTrainingCompleted += NotifyTrainingCompleted;
 
         button_Perform = GameObject.Find("Button_Perform").GetComponent<Button>();
         button_Perform.interactable = false;
@@ -55,8 +58,7 @@ public class ButtonHandler : MonoBehaviour
         if (testMode)
         {
             if (GestureManager.Instance.CurrentGestureID >= 0)
-                text_Notification.text = $"Identified Gesture : {GestureManager.Instance.CurrentGestureName}\n" +
-                                    $"Confidence {similarity * 100:0.00}%";
+                text_Notification.text = $"Identified Gesture : {GestureManager.Instance.CurrentGestureName}\n";
             else
                 text_Notification.text = "Identification fails.\nPlease retry.";
         }
@@ -126,27 +128,59 @@ public class ButtonHandler : MonoBehaviour
                                     "(At least 20 are recommended.)";
     }
 
+    private void Update()
+    {
+    }
+
     public void TrainGesture()
     {
         if (GestureManager.Instance.TryTrain())
         {
-            testMode = true;
-            ModeChanged();
-
-            button_Undo.interactable = false;
-            button_Train.interactable = false;
-
-            text_Notification.text = "Training finished.\n\nPerform : Identify the recorded gesture.\nCreate : Add another gesture.";
-            text_GestureList.text = "Recorded Gesture :\n";
-            for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
-                text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
-            text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
         }
         else
         {
             text_Notification.text = "Training failed.";
         }
     }
+
+    public void NotifyTrainingInProgress(double rate)
+    {
+        MainThreadCaller.Instance.Enqueue(ChangeUIWhenTrainingInProgress(rate));
+    }
+
+    private IEnumerator ChangeUIWhenTrainingInProgress(double rate)
+    {
+        text_Notification.text = $"Training in progress... {rate * 100:00.00}%\nPlease wait.";
+
+        button_Perform.interactable = false;
+        button_Create.interactable = false;
+        button_Undo.interactable = false;
+        button_Train.interactable = false;
+        yield return null;
+    }
+
+    public void NotifyTrainingCompleted(double rate)
+    {
+        MainThreadCaller.Instance.Enqueue(ChangeUIWhenTrainingCompleted(rate));
+    }
+
+    private IEnumerator ChangeUIWhenTrainingCompleted(double rate)
+    {
+        testMode = true;
+        ModeChanged();
+
+        text_Notification.text = "Training finished.\n\nTest : Identify the recorded gesture.\nCreate : Add another gesture.";
+        text_GestureList.text = "Recorded Gesture :\n";
+        for (int i = 0; i < GestureManager.Instance.GestureCount; i++)
+            text_GestureList.text += $"{GestureManager.Instance.GetGestureName(i)}, ";
+        text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+
+        button_Perform.interactable = true;
+        button_Create.interactable = true;
+
+        yield return null;
+    }
+
 
     public void Reset()
     {
@@ -170,6 +204,7 @@ public class ButtonHandler : MonoBehaviour
     {
         if (GestureManager.Instance.Load())
         {
+            button_Perform.interactable = true;
             testMode = true;
             ModeChanged();
 
@@ -189,6 +224,7 @@ public class ButtonHandler : MonoBehaviour
     {
         if (GestureManager.Instance.LoadDefault())
         {
+            button_Perform.interactable = true;
             testMode = true;
             ModeChanged();
 

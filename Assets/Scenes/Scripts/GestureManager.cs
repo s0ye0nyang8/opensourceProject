@@ -1,6 +1,7 @@
 ﻿using AOT;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -39,9 +40,9 @@ public class GestureManager : MonoBehaviour
     }
     private void Awake()
     {
-        var objs = FindObjectsOfType<GestureManager>();
+        var obj = FindObjectsOfType<GestureManager>();
 
-        if (objs.Length != 1)
+        if (obj.Length != 1)
         {
             Destroy(gameObject);
 
@@ -54,51 +55,22 @@ public class GestureManager : MonoBehaviour
 
     private GCHandle handle;
     private GestureRecognition gr = new GestureRecognition();
-    private List<string> gestureList = null;    //list for created gestures. it will include gestures from save files.
     private bool isPerforming = false;  //for distinguish "continue" gesture step. 3steps : "start" -> "continue" -> "end"
     private bool canSave = false;   //notify state that is able to save the file when train is complete.
     enum GestureID { None = -1 }
     private int currentGestureID = (int)GestureID.None;
-    
-    public int CurrentGestureID { get { return currentGestureID; } }
+    private List<Gesture> gestureList;
+
+    public ReadOnlyCollection<Gesture> GestureList { get { return gestureList.AsReadOnly(); } }
+    public int CurrentGestureID { get { return currentGestureID; } }    //index of recent identified or recording gesture.
     public string CurrentGestureName { get { return gr.getGestureName(currentGestureID); } }
     public string GetGestureName(int index) => gr.getGestureName(index);
     public int CurrentSampleCount { get { return gr.getGestureNumberOfSamples(currentGestureID); } }
     public int GestureCount { get { return gr.numberOfGestures(); } }
 
-
-    #region Section for demo. Afterwards, need to delete.
-    private System.Random random = new System.Random();
-    private readonly string[] tempGestureSuggestions = new string[]
-    {   //temp list for demo test. it will be replaced by user suggestions(using textbox input).
-        "Circle", "Square", "Star", "TiltLeft", "TiltRight", "UpDown", "Check"
-    };
-    private int anythingIndex = 1;
-
-    //Afterwards, need to input gesture suggest by user, not system.
-    //So, ex) SaveList, LoadList, Register(by user input)... functions will be required.
-    private string GetGestureSuggestion()   
-    {
-        if (gestureList == null)
-        {
-            gestureList = new List<string>();
-            for (int i = 0; i < tempGestureSuggestions.Length; i++)
-            {
-                gestureList.Add(tempGestureSuggestions[i]);
-            }
-        }
-
-        if (gestureList.Count == 0)
-        {
-            return "Anything" + anythingIndex++;
-        }
-        int index = random.Next(0, gestureList.Count);
-        string randomWord = gestureList[index];
-        gestureList.RemoveAt(index);
-
-        return randomWord;
-    }
-    #endregion
+    public delegate void TrainingEventDelegate(double performance);
+    public event TrainingEventDelegate OnTrainingInProgress;
+    public event TrainingEventDelegate OnTrainingCompleted;
 
     private void Start()
     {
@@ -115,40 +87,36 @@ public class GestureManager : MonoBehaviour
     {
         if (isPerforming)   //true from StartRead(), false from EndRead().
         {
-            Vector3 p = Input.gyro.userAcceleration;
-            Quaternion q = Quaternion.FromToRotation(new Vector3(0, 1, 0), Input.gyro.gravity);
-            gr.contdStrokeQ(p, q);  //startStroke() (from StartRead()) -> contdStrokeQ() -> endStroke() (from EndRead())
-
-            Debug.Log($"acc = {p.x:0.00} {p.y:0.00} {p.z:0.00}\n"
-                        + $"grav = {q.x:0.00} {q.y:0.00} {q.z:0.00}");
+            ContinueRead();
         }
+
+        if (gr.isTraining())
+        {
+
+        }
+
     }
 
     public void Initialize()
     {
+        gestureList = new List<Gesture>();
         isPerforming = false;
         canSave = false;
+
         gr.deleteAllGestures();
         currentGestureID = (int)GestureID.None;
-        anythingIndex = 1;
-
-        gestureList = new List<string>();
-        for (int i = 0; i < tempGestureSuggestions.Length; i++)
-        {
-            gestureList.Add(tempGestureSuggestions[i]);
-        }
     }
 
     public void Register(string name)  //it may need a strnig as parameter when user input implements.
     {
-        // currentGestureID = gr.createGesture(GetGestureSuggestion());
-        currentGestureID = gr.createGesture(name);
+        int index = gr.createGesture(name);
 
-        if (currentGestureID < 0)   //when function returns negative, creation fails. retry.
-            Register(name);
+        //gestureList.Add(new Gesture(index, name));
     }
 
-    public void StartRead(bool isIdentificationMode = false)    //true : just read, false : for a sample.
+    //isIdentificationMode : true, just read. false, for a sample.
+    //index : if it is positive, add new sample to already existed gesture in index.
+    public void StartRead(bool isIdentificationMode = false, int index = (int)GestureID.None)
     {
         isPerforming = true;
         Vector3 p = new Vector3(0.0f, 0.0f, 0.0f);
@@ -157,7 +125,27 @@ public class GestureManager : MonoBehaviour
         if (isIdentificationMode)
             gr.startStroke(p, q);
         else
-            gr.startStroke(p, q, currentGestureID);
+        {
+            if (index < 0)
+                gr.startStroke(p, q, currentGestureID);
+            else if (index < gr.numberOfGestures())
+                gr.startStroke(p, q, index);
+            else
+            {
+                isPerforming = false;
+                Debug.Log("There's not the corresponding index to add the sample.");
+            }
+        }
+    }
+
+    private void ContinueRead()
+    {
+        Vector3 p = Input.gyro.userAcceleration;
+        Quaternion q = Quaternion.FromToRotation(new Vector3(0, 1, 0), Input.gyro.gravity);
+        gr.contdStrokeQ(p, q);  //startStroke() (from StartRead()) -> contdStrokeQ() -> endStroke() (from EndRead())
+
+        Debug.Log($"acc = {p.x:0.00} {p.y:0.00} {p.z:0.00}\n"
+                    + $"grav = {q.x:0.00} {q.y:0.00} {q.z:0.00}");
     }
 
     public double EndRead()
@@ -170,21 +158,39 @@ public class GestureManager : MonoBehaviour
         return similarity;  //will be used by external class when identifying the gesture.
     }
 
-    public void DeleteLastSample()
+    public bool Delete(int index)
     {
-        gr.deleteGestureSample(currentGestureID, CurrentSampleCount - 1);
+        bool isDeleted = gr.deleteGesture(index);
+
+        if (isDeleted)
+        {
+            gestureList.RemoveAt(index);
+        }
+
+        return isDeleted;
+    }
+
+    public bool DeleteLastSample()
+    {
+        return gr.deleteGestureSample(currentGestureID, CurrentSampleCount - 1);
+    }
+
+    public bool DeleteLastSample(int index)
+    {
+        return gr.deleteGestureSample(index, CurrentSampleCount - 1);
     }
 
     public bool TryTrain() //depending on samples, it can fail.
     {
         gr.setMaxTrainingTime(20);
         if (gr.startTraining())
+        {
             return true;
+        }
         else
             // handling in case "failed" needs to implement. use callback???
             return false;
     }
-
     public bool Save()
     {
         string trainedData = "gestureSuggestions.dat";
@@ -213,11 +219,11 @@ public class GestureManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Current state can't be saved.");
+            Debug.Log("The Current state can't be saved."); //ex) try [save] before training...
             return false;
         }
     }
-    public bool LoadDefault()
+    public bool LoadDefault()   //load default gesture suggestions file in Assets/StreamingAssets/
     {
         string trainedData = "gestureSuggestions.dat";
         string trainedDataPath;
@@ -247,6 +253,11 @@ public class GestureManager : MonoBehaviour
         if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
         {
             Debug.Log("Load completed");
+            //for (int i = 0; i < gr.numberOfGestures(); i++)
+            //{
+            //    gestureList.Add(new Gesture(i, gr.getGestureName(i)));
+            //}
+
             return true;
         }
         else
@@ -271,6 +282,11 @@ public class GestureManager : MonoBehaviour
         if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
         {
             Debug.Log("Load completed");
+            //for (int i = 0; i < gr.numberOfGestures(); i++)
+            //{
+            //    gestureList.Add(new Gesture(i, gr.getGestureName(i)));
+            //}
+
             return true;
         }
         else
@@ -281,24 +297,21 @@ public class GestureManager : MonoBehaviour
     }
 
     [MonoPInvokeCallback(typeof(GestureRecognition.TrainingCallbackFunction))]
-    public static void trainingUpdateCallback(double performance, IntPtr ptr)
+    public static void trainingUpdateCallback(double rate, IntPtr ptr)
     {
-        // Get the script/scene object back from metadata.
-        GCHandle obj = (GCHandle)ptr;
-        GestureManager me = obj.Target as GestureManager;
-        // Update the performance indicator with the latest estimate.
-        //me.last_performance_report = performance;
+        var gestureManager = ((GCHandle)ptr).Target as GestureManager;
+        gestureManager.OnTrainingInProgress(rate);
+
+        Debug.Log($"Training in progress... {rate}%");
     }
 
     [MonoPInvokeCallback(typeof(GestureRecognition.TrainingCallbackFunction))]
-    public static void trainingFinishCallback(double performance, IntPtr ptr)
+    public static void trainingFinishCallback(double rate, IntPtr ptr)
     {
         var gestureManager = ((GCHandle)ptr).Target as GestureManager;
-        // Update the performance indicator with the latest estimate.
-        //me.last_performance_report = performance;
-        // Signal that training was finished.
-        //me.recording_gesture = -3;
-
+        gestureManager.OnTrainingCompleted(rate);
         gestureManager.canSave = true;
+
+        Debug.Log("Training completed.");
     }
 }
