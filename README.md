@@ -21,27 +21,27 @@
 
 
 
-## 개요
+## [개요](#목차)
 
 핸드폰의 가속도센서를 이용하여 런치패드를 구현하는 어플입니다.
 
 ------
 
 
-## 설치
+## [설치](#목차)
 
 Recognition.apk 파일을 다운로드 해 안드로이드 스마트폰에 설치한다.  
    
    
    
 -------
-## 기능
+## [기능](#목차)
 
 - 초기에 설정된 제스처 및 사용자가 임의로 제스처를 설정해 제스처에 맞는 음악을 재생한다.
 - Default 제스처로 Square, Star, Up Down, Tilt Right, Tilt Left, Circle, Check 가 제공된다.
 - Default 제스처 및 임의의 제스처를 설정한 후 Train 버튼을 통해 학습할 수 있고, 학습이 완료된 후 데이터를 Save, Load 할 수 있다.
 
-## Default 제스처
+## [Default 제스처](#목차)
 
 1. Square
    
@@ -67,6 +67,6 @@ Recognition.apk 파일을 다운로드 해 안드로이드 스마트폰에 설�
 
 ------
 
-# License
+# [License](#목차)
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>
