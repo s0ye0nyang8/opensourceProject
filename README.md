@@ -9,13 +9,13 @@
 ### [2. 설치](#설치)
 ### [3. 기능](#기능)
 ### [4. Default 제스처](#default-제스처)
-   1) [Square](#square)
-   2) [Star](#star)
-   3) [Up Down](#updown)
-   4) [Tilt Right](#tiltright)
-   5) [Tilt Left](#tiltleft)
-   6) [Circle](#circle)
-   7) [Check](#check)
+   1) Square
+   2) Star
+   3) Up Down
+   4) Tilt Right
+   5) Tilt Left
+   6) Circle
+   7) Check
 ### [5. License](#license)
 *****
 
@@ -43,25 +43,26 @@ Recognition.apk 파일을 다운로드 해 안드로이드 스마트폰에 설�
 
 ## Default 제스처
 
-<div id=square>1. Square 
+1. Square
+   
 <img src="https://user-images.githubusercontent.com/55373167/83945941-cab20f00-a848-11ea-8277-1d84cafda4f4.png" width="50%">    
 
-<div id=star>2. Star    
+2. Star    
 <img src="https://user-images.githubusercontent.com/55373167/83945943-cab20f00-a848-11ea-9ec1-cf94876987aa.png" width="50%">    
 
-<div id=updown>3. Up Down    
+3. Up Down    
 <img src="https://user-images.githubusercontent.com/55373167/83945944-cb4aa580-a848-11ea-9948-1dce6e88e323.png" width="15%">    
 
-<div id=tiltright>4. Tilt Right    
+4. Tilt Right    
 <img src="https://user-images.githubusercontent.com/55373167/83945945-cbe33c00-a848-11ea-930f-541afb7a6231.png" width="40%">    
 
-<div id=tiltleft>5. Tilt Left    
+5. Tilt Left    
 <img src="https://user-images.githubusercontent.com/55373167/83945936-c8e84b80-a848-11ea-98de-aa541f7f3de2.png" width="40%">    
 
-<div id=circle>6. Circle    
+6. Circle    
 <img src="https://user-images.githubusercontent.com/55373167/83945937-c980e200-a848-11ea-99f5-4ad24a346513.png" width="50%">    
 
-<div id=check>7. Check    
+7. Check    
 <img src="https://user-images.githubusercontent.com/55373167/83945940-ca197880-a848-11ea-97e9-582d38761e8f.png" width="50%">    
 
 ------
