@@ -8,9 +8,8 @@ using UnityEngine.UI;
 public class ButtonHandler : MonoBehaviour
 {
     private Button button_Perform, button_Undo, button_Create, button_Train;    //for toggle "interactable"
-    private Text text_Notification, text_GestureList;
-    private Text paneltext;
-
+    public Text text_Notification, text_GestureList;
+    
     private GameObject panel_CreateDialog;
     private GameObject panel_LoadDialog;
 
@@ -36,16 +35,15 @@ public class ButtonHandler : MonoBehaviour
         button_Create = GameObject.Find("Button_Create").GetComponent<Button>();
         button_Train = GameObject.Find("Button_Train").GetComponent<Button>();
         button_Train.interactable = false;
-        text_Notification = GameObject.Find("Text_Notification").GetComponent<Text>();
-        text_GestureList = GameObject.Find("Text_GestureList").GetComponent<Text>();
+
 
         panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
-        panel_LoadDialog = GameObject.Find("Canvas").transform.Find("Panel_LoadDialog").gameObject;
+        panel_LoadDialog = GameObject.Find("Canvas").transform.Find("panel_LoadDialog").gameObject;
 
-        text_Notification.text = "Register new gesture through [Create].\n\n" +
+        /*text_Notification.text = "Register new gesture through [Create].\n\n" +
                                     "The sample will be recorded\n" +
                                     "while [Perform] is pressed.";
-        text_GestureList.text = "";
+        text_GestureList.text = "";*/
     }
 
     public void ChangeImage(bool a)
@@ -94,7 +92,6 @@ public class ButtonHandler : MonoBehaviour
             text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
                                     $"Samples : {currentGesture.SampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
-            //SaveGesturesToFile();
         }
     }
 
@@ -142,13 +139,16 @@ public class ButtonHandler : MonoBehaviour
                                     $"Samples : {currentGesture.SampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
     }
+    public void openLoadDialog()
+    {
+        panel_LoadDialog.SetActive(true);
+  
+    }
 
     public void closeLoadDialog()
     {
-        if (panel_LoadDialog != null)
-        {
-            panel_LoadDialog.SetActive(false);
-        }
+        panel_LoadDialog.SetActive(false);
+    
     }
 
     public void ShowRecords()
