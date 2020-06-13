@@ -12,7 +12,7 @@ public class ButtonHandler : MonoBehaviour
     private Text paneltext;
 
     private GameObject panel_CreateDialog;
-    private GameObject load_panel;
+    private GameObject panel_LoadDialog;
 
     private bool isIdentificationMode = false;
 
@@ -40,10 +40,7 @@ public class ButtonHandler : MonoBehaviour
         text_GestureList = GameObject.Find("Text_GestureList").GetComponent<Text>();
 
         panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
-        load_panel = GameObject.Find("load_panel");
-        //paneltext = GameObject.Find("PText").GetComponent<Text>();
-        //motions = GameObject.Find("PText2").GetComponent<Text>();
-
+        panel_LoadDialog = GameObject.Find("Canvas").transform.Find("Panel_LoadDialog").gameObject;
 
         text_Notification.text = "Register new gesture through [Create].\n\n" +
                                     "The sample will be recorded\n" +
@@ -97,7 +94,6 @@ public class ButtonHandler : MonoBehaviour
             text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
                                     $"Samples : {currentGesture.SampleCount}\n\n" +
                                     "(At least 20 are recommended.)";
-
             //SaveGesturesToFile();
         }
     }
@@ -147,16 +143,11 @@ public class ButtonHandler : MonoBehaviour
                                     "(At least 20 are recommended.)";
     }
 
-    public void closePanel()
+    public void closeLoadDialog()
     {
-        if (panel_CreateDialog != null)
+        if (panel_LoadDialog != null)
         {
-            panel_CreateDialog.SetActive(false);
-        }
-
-        if (load_panel != null)
-        {
-            load_panel.SetActive(false);
+            panel_LoadDialog.SetActive(false);
         }
     }
 

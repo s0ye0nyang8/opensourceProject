@@ -60,7 +60,7 @@ public class GestureManager : MonoBehaviour
     private bool canSave = false;   //notify state that is able to save the file when train is complete.
     enum GestureID { None = -1 }
 
-    private List<Gesture> gestureList;
+    public List<Gesture> gestureList;
 
     public ReadOnlyCollection<Gesture> GestureList { get { return gestureList.AsReadOnly(); } }
     public Gesture GetRecentGesture { get { return gestureList[gestureList.Count - 1]; } }
