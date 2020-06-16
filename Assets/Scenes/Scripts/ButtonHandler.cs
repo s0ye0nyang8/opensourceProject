@@ -7,12 +7,12 @@ using UnityEngine.UI;
 
 public class ButtonHandler : MonoBehaviour
 {
-    private Button button_Perform, button_Undo, button_Create, button_Train;    //for toggle "interactable"
+    public Button Button_Perform, Button_Undo, Button_Edit, Button_Train;    //for toggle "interactable"
     public Text text_Notification, text_GestureList;
-    
-    private GameObject panel_CreateDialog;
-    private GameObject panel_LoadDialog;
+    public GameObject Dialog_Add, Dialog_Edit;
+    public RectTransform GestureListViewContent;
 
+    private GameObject gestureItemPrefab;
     private bool isIdentificationMode = false;
 
     private delegate void ModeChangedHandler();
@@ -24,21 +24,15 @@ public class ButtonHandler : MonoBehaviour
 
     private void Start()
     {
+        gestureItemPrefab = Resources.Load<GameObject>("Prefabs/GestureItem");
+
         ModeChanged += OnModeChanged;
         GestureManager.Instance.OnTrainingInProgress += NotifyTrainingInProgress;
         GestureManager.Instance.OnTrainingCompleted += NotifyTrainingCompleted;
 
-        button_Perform = GameObject.Find("Button_Perform").GetComponent<Button>();
-        button_Perform.interactable = false;
-        button_Undo = GameObject.Find("Button_Undo").GetComponent<Button>();
-        button_Undo.interactable = false;
-        button_Create = GameObject.Find("Button_Create").GetComponent<Button>();
-        button_Train = GameObject.Find("Button_Train").GetComponent<Button>();
-        button_Train.interactable = false;
-
-
-        panel_CreateDialog = GameObject.Find("Canvas").transform.Find("Panel_CreateDialog").gameObject;
-        panel_LoadDialog = GameObject.Find("Canvas").transform.Find("panel_LoadDialog").gameObject;
+        //Button_Train.interactable = false;
+        //Button_Perform.interactable = false;
+        //Button_Undo.interactable = false;
 
         /*text_Notification.text = "Register new gesture through [Create].\n\n" +
                                     "The sample will be recorded\n" +
@@ -60,16 +54,25 @@ public class ButtonHandler : MonoBehaviour
 
     public void StartGesture()
     {
-        if (!button_Perform.interactable)
+        if (!Button_Perform.interactable)
             return;
         ChangeImage(true);
 
         GestureManager.Instance.StartRead(isIdentificationMode);
     }
 
+    public void StartGesture(int index)
+    {
+        if (!Button_Perform.interactable)
+            return;
+        ChangeImage(true);
+
+        GestureManager.Instance.StartReadAt(index);
+    }
+
     public void StopGesture()
     {
-        if (!button_Perform.interactable)
+        if (!Button_Perform.interactable)
             return;
         ChangeImage(false);
 
@@ -84,9 +87,9 @@ public class ButtonHandler : MonoBehaviour
         }
         else
         {
-            button_Undo.interactable = true;
-            button_Create.interactable = true;
-            button_Train.interactable = true;
+            Button_Undo.interactable = true;
+            Button_Edit.interactable = true;
+            Button_Train.interactable = true;
 
             var currentGesture = GestureManager.Instance.GetRecentGesture;
             text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
@@ -106,49 +109,81 @@ public class ButtonHandler : MonoBehaviour
                                     "(At least 20 are recommended.)";
     }
 
-    public void OpenCreateDialog()
+    public void OpenEditDialog()
     {
-        if (panel_CreateDialog != null)
+        Dialog_Edit.SetActive(true);
+        UpdateGestureListView();
+    }
+
+    public void CloseEditDialog() => Dialog_Edit.SetActive(false);
+
+    public void OpenAddDialog() => Dialog_Add.SetActive(true);
+
+    public void CloseAddDialog() => Dialog_Add.SetActive(false);
+
+    private void UpdateGestureListView()
+    {
+        var gesture = GestureManager.Instance.GestureList;
+        int count = GestureManager.Instance.GestureList.Count;
+
+        // First, remove previous children of list.
+        foreach (Transform child in GestureListViewContent)
+            Destroy(child.gameObject);
+
+        // Then, load the gestures from GM.
+        for (int i = 0; i < count; i++)
         {
-            panel_CreateDialog.SetActive(true);
+            var gestureItem = Instantiate(gestureItemPrefab).transform;
+            var name = gestureItem.Find("Text_Name").GetComponent<Text>();
+            var sampleCount = gestureItem.Find("Text_SampleCount").GetComponent<Text>();
+            var button_AddAudio = gestureItem.Find("Button_AddAudio").GetComponent<Button>();
+            var button_Select = gestureItem.Find("Button_Select").GetComponent<Button>();
+            var button_Delete = gestureItem.Find("Button_Delete").GetComponent<Button>();
+
+            name.text = gesture[i].Name;
+            sampleCount.text = $"Samples : {gesture[i].SampleCount}";
+
+            button_AddAudio.onClick.AddListener(() =>
+            {
+
+            });
+
+            button_Select.onClick.AddListener(() =>
+            {
+
+            });
+
+            button_Delete.onClick.AddListener(() =>
+            {
+
+            });
+
+            gestureItem.SetParent(GestureListViewContent, false);
         }
     }
 
-    public void CloseCreateDialog()
+    public void AddGesture()
     {
-        if (panel_CreateDialog != null)
-        {
-            panel_CreateDialog.SetActive(false);
-        }
-    }
+        var inputfield_GestureName = Dialog_Add.transform.GetComponentInChildren<InputField>();
 
-    public void ConfirmCreateDialog()
-    {
-        var inputfield_GestureName = GameObject.Find("InputField_GestureName").GetComponent<InputField>();
+        // Not allow null or whitespace as the gesture name.
+        if (String.IsNullOrWhiteSpace(inputfield_GestureName.text))
+            return;
+
         GestureManager.Instance.Register(inputfield_GestureName.text);
         inputfield_GestureName.text = "";
+        CloseAddDialog();
 
-        CloseCreateDialog();
+        UpdateGestureListView();
 
-        button_Perform.interactable = true;
-        isIdentificationMode = false;
-        ModeChanged();
+        //Button_Perform.interactable = true;
+        //isIdentificationMode = false;
+        //ModeChanged();
 
-        var currentGesture = GestureManager.Instance.GetRecentGesture;
-        text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
-                                    $"Samples : {currentGesture.SampleCount}\n\n" +
-                                    "(At least 20 are recommended.)";
-    }
-    public void openLoadDialog()
-    {
-        panel_LoadDialog.SetActive(true);
-  
-    }
-
-    public void closeLoadDialog()
-    {
-        panel_LoadDialog.SetActive(false);
-    
+        //var currentGesture = GestureManager.Instance.GetRecentGesture;
+        //text_Notification.text = $"Target Gesture : {currentGesture.Name}\n" +
+        //                            $"Samples : {currentGesture.SampleCount}\n\n" +
+        //                            "(At least 20 are recommended.)";
     }
 
     public void ShowRecords()
@@ -181,10 +216,10 @@ public class ButtonHandler : MonoBehaviour
     {
         text_Notification.text = $"Training in progress... {rate * 100:00.00}%\nPlease wait.";
 
-        button_Perform.interactable = false;
-        button_Create.interactable = false;
-        button_Undo.interactable = false;
-        button_Train.interactable = false;
+        Button_Perform.interactable = false;
+        Button_Edit.interactable = false;
+        Button_Undo.interactable = false;
+        Button_Train.interactable = false;
         yield return null;
     }
 
@@ -204,8 +239,8 @@ public class ButtonHandler : MonoBehaviour
             text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
         text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
 
-        button_Perform.interactable = true;
-        button_Create.interactable = true;
+        Button_Perform.interactable = true;
+        Button_Edit.interactable = true;
 
         yield return null;
     }
@@ -233,15 +268,15 @@ public class ButtonHandler : MonoBehaviour
     {
         if (GestureManager.Instance.LoadCustomTrainedData())
         {
-            button_Perform.interactable = true;
+            Button_Perform.interactable = true;
             isIdentificationMode = true;
             ModeChanged();
 
             text_Notification.text = "Loading trained data succeeded.\n";
-            text_GestureList.text = "Recorded Gesture :\n";
-            for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
-                text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
-            text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+            //text_GestureList.text = "Recorded Gesture :\n";
+            //for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
+            //    text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
+            //text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
         }
         else
         {
@@ -253,15 +288,15 @@ public class ButtonHandler : MonoBehaviour
     {
         if (GestureManager.Instance.LoadDeafaultTrainedData())
         {
-            button_Perform.interactable = true;
+            Button_Perform.interactable = true;
             isIdentificationMode = true;
             ModeChanged();
 
             text_Notification.text = "Loading trained data succeeded.\n";
-            text_GestureList.text = "Recorded Gesture :\n";
-            for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
-                text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
-            text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
+            //text_GestureList.text = "Recorded Gesture :\n";
+            //for (int i = 0; i < GestureManager.Instance.GestureList.Count; i++)
+            //    text_GestureList.text += $"{GestureManager.Instance.GestureList[i].Name}, ";
+            //text_GestureList.text = text_GestureList.text.TrimEnd(',', ' ');
         }
         else
         {
