@@ -90,4 +90,9 @@ public class MainThreadCaller : MonoBehaviour
 		action();
 		yield return null;
 	}
+
+	void OnDestroy()
+	{
+		instance = null;
+	}
 }

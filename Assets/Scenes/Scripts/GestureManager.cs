@@ -105,21 +105,21 @@ public class GestureManager : MonoBehaviour
 
     //isIdentificationMode : true, just read. false, for a sample.
     //index : if it is positive, add new sample to already existed gesture in index.
-    public void StartRead(bool isIdentificationMode = false)
+    public void StartRead()
     {
         isPerforming = true;
         Vector3 p = new Vector3(0.0f, 0.0f, 0.0f);
         Quaternion q = new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 
-        if (isIdentificationMode)
-            gr.startStroke(p, q);
-        else
-        {
-            int index = gestureList.Count - 1;
-            gr.startStroke(p, q, index); //for the gesture created recently.
-            gestureList[index].SampleCount++;
+        //if (isIdentificationMode)
+        gr.startStroke(p, q);
+        //else
+        //{
+        //    int index = gestureList.Count - 1;
+        //    gr.startStroke(p, q, index); //for the gesture created recently.
+        //    gestureList[index].SampleCount++;
 
-        }
+        //}
     }
 
     public void StartReadAt(int index) //for collecting samples of gestures from specific index.
@@ -153,7 +153,7 @@ public class GestureManager : MonoBehaviour
                 return;
 
             // n : Count of data points
-            int n = 100;
+            int n = 10;
             for (float i = 0; i < 1; i += 1.0f / n)
             {
                 var addP = Vector3.Lerp(recentP, p, i);
@@ -214,7 +214,7 @@ public class GestureManager : MonoBehaviour
 
     public bool TryTrain() //depending on samples, it can fail.
     {
-        gr.setMaxTrainingTime(20);
+        gr.setMaxTrainingTime(30);
         if (gr.startTraining())
         {
             return true;
