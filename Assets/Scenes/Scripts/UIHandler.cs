@@ -14,14 +14,16 @@ public class UIHandler : MonoBehaviour
     public Button Button_Train, Button_Save, Button_Load, Button_Play;
 
     public Text text_Notification, text_GestureList;
-    public GameObject Dialog_Edit, Dialog_AddGesture, Dialog_AddAudio;
+    public GameObject Dialog_Edit, Dialog_AddGesture, Dialog_AddAudio, Dialog_Load;
     public RectTransform GestureListViewContent;
+    public RectTransform FileListViewContent;
 
     public Image defaultimg;
     public Sprite offimage;
     public Sprite onimage;
 
     private GameObject gestureItemPrefab;
+    private GameObject fileItemPrefab;
     private delegate void ModeChangedHandler();
     private event ModeChangedHandler ModeChanged;
 
@@ -32,6 +34,7 @@ public class UIHandler : MonoBehaviour
     private void Start()
     {
         gestureItemPrefab = Resources.Load<GameObject>("Prefabs/GestureItem");
+        fileItemPrefab = Resources.Load<GameObject>("Prefabs/FileItem");
 
         ModeChanged += OnModeChanged;
         GestureManager.Instance.OnTrainingInProgress += NotifyTrainingInProgress;
@@ -118,6 +121,14 @@ public class UIHandler : MonoBehaviour
 
     public void CloseEditDialog() => Dialog_Edit.SetActive(false);
 
+    public void OpenLoadDialog()
+    {
+        Dialog_Load.SetActive(true);
+        UpdateFileListView();
+    }
+
+    public void CloseLoadDialog() => Dialog_Load.SetActive(false);
+
     public void OpenAddGestureDialog() => Dialog_AddGesture.SetActive(true);
 
     public void CloseAddGestureDialog() => Dialog_AddGesture.SetActive(false);
@@ -185,6 +196,53 @@ public class UIHandler : MonoBehaviour
             });
 
             gestureItem.SetParent(GestureListViewContent, false);
+        }
+    }
+
+    private void UpdateFileListView()
+    {
+        string filePath;
+#if UNITY_EDITOR
+        filePath = "Assets/Data";
+#elif UNITY_ANDROID
+        filePath = Application.persistentDataPath;
+#else
+        filePath = Application.streamingAssetsPath;
+#endif
+
+        foreach (Transform child in FileListViewContent)
+            Destroy(child.gameObject);
+
+        var info = new System.IO.DirectoryInfo(filePath);
+        foreach (var file in info.GetFiles())
+        {
+            if (file.Extension != ".dat")
+                continue;
+
+            var fileItem = Instantiate(fileItemPrefab).transform;
+            var name = fileItem.Find("Text_Name").GetComponent<Text>();
+            var button_Select = fileItem.Find("Button_Select").GetComponent<Button>();
+            var button_Delete = fileItem.Find("Button_Delete").GetComponent<Button>();
+
+            name.text = file.Name;
+
+            button_Select.onClick.AddListener(() =>
+            {
+                Debug.Log($"{filePath}/{name.text}");
+                CloseLoadDialog();
+                LoadGesturesFromFile($"{filePath}/{name.text}");
+            });
+
+            button_Delete.onClick.AddListener(() =>
+            {
+                System.IO.File.Delete($"{filePath}/{name.text}");
+                text_Notification.text = "";
+                Button_Perform.interactable = false;
+
+                UpdateFileListView();
+            });
+
+            fileItem.SetParent(FileListViewContent, false);
         }
     }
 
@@ -324,9 +382,9 @@ public class UIHandler : MonoBehaviour
         }
     }
 
-    public void LoadGesturesFromFile()
+    public void LoadGesturesFromFile(string path)
     {
-        if (GestureManager.Instance.LoadCustomTrainedData())
+        if (GestureManager.Instance.LoadCustomTrainedData(path))
         {
             Button_Perform.interactable = true;
             isIdentificationMode = true;
@@ -354,6 +412,8 @@ public class UIHandler : MonoBehaviour
         {
             text_Notification.text = "Trained data to load does not exist.";
         }
+
+        CloseLoadDialog();
     }
 
     private void OnModeChanged()

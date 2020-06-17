@@ -304,19 +304,9 @@ public class GestureManager : MonoBehaviour
         }
     }
 
-    public bool LoadCustomTrainedData()
+    public bool LoadCustomTrainedData(string path)
     {
-        string trainedData = "gestureSuggestions.dat";
-        string trainedDataPath;
-
-#if UNITY_EDITOR
-        trainedDataPath = "Assets/Data";
-#elif UNITY_ANDROID
-        trainedDataPath = Application.persistentDataPath;
-#else
-        trainedDataPath = Application.streamingAssetsPath;
-#endif
-        if (gr.loadFromFile($"{trainedDataPath}/{trainedData}"))
+        if (gr.loadFromFile(path))
         {
             Debug.Log("Load completed");
             gestureList = new List<Gesture>();
