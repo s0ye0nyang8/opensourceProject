@@ -259,6 +259,36 @@ public class GestureManager : MonoBehaviour
         }
     }
 
+    public bool SaveTrainedData(string name)
+    {
+        if (canSave)
+        {
+#if UNITY_EDITOR
+            string path = $"Assets/Data/{name}.dat";
+#elif UNITY_ANDROID
+            string path = $"{Application.persistentDataPath }/{name}.dat";
+#else
+            string path = $"{Application.streamingAssetsPath}/{name}.dat";
+#endif
+            if (gr.saveToFile(path))
+            {
+                canSave = false;
+                Debug.Log($"Save completed.\n{name}.dat is created.");
+                return true;
+            }
+            else
+            {
+                Debug.Log("Save failed.");
+                return false;
+            }
+        }
+        else
+        {
+            Debug.Log("The Current state can't be saved."); //ex) try [save] before training...
+            return false;
+        }
+    }
+
     public bool LoadDeafaultTrainedData()   //load default gesture suggestions file in Assets/StreamingAssets/
     {
         string trainedData = "gestureSuggestions.dat";
@@ -341,5 +371,10 @@ public class GestureManager : MonoBehaviour
         gestureManager.canSave = true;
 
         Debug.Log("Training completed.");
+    }
+
+    void OnApplicationQuit()
+    {
+        gr.stopTraining();
     }
 }

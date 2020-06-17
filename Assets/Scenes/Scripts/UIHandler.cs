@@ -14,7 +14,8 @@ public class UIHandler : MonoBehaviour
     public Button Button_Train, Button_Save, Button_Load, Button_Play;
 
     public Text text_Notification, text_GestureList;
-    public GameObject Dialog_Edit, Dialog_AddGesture, Dialog_AddAudio, Dialog_Load;
+    public GameObject Dialog_Edit,  Dialog_Load;
+    public GameObject Dialog_Save, Dialog_AddGesture, Dialog_AddAudio;
     public RectTransform GestureListViewContent;
     public RectTransform FileListViewContent;
 
@@ -93,6 +94,7 @@ public class UIHandler : MonoBehaviour
             if (isPlaying)
             {
                 AudioManager.Instance.PlaySound(currentGesture);
+                text_Notification.text += $"Play \"{currentGesture.Audio}\"!";
             }
 
         }
@@ -129,13 +131,37 @@ public class UIHandler : MonoBehaviour
 
     public void CloseLoadDialog() => Dialog_Load.SetActive(false);
 
+    public void OpenSaveDialog() => Dialog_Save.SetActive(true);
+
+    public void CloseSaveDialog()
+    {
+        var inputfield_FileName = Dialog_Save.transform.GetComponentInChildren<InputField>();
+
+        inputfield_FileName.text = "";
+        Dialog_Save.SetActive(false);
+    }
+
+
+
     public void OpenAddGestureDialog() => Dialog_AddGesture.SetActive(true);
 
-    public void CloseAddGestureDialog() => Dialog_AddGesture.SetActive(false);
+    public void CloseAddGestureDialog()
+    {
+        var inputfield_GestureName = Dialog_AddGesture.transform.GetComponentInChildren<InputField>();
+
+        inputfield_GestureName.text = "";
+        Dialog_AddGesture.SetActive(false);
+    }
 
     public void OpenAddAudioDialog() => Dialog_AddAudio.SetActive(true);
 
-    public void CloseAddAudioDialog() => Dialog_AddAudio.SetActive(false);
+    public void CloseAddAudioDialog()
+    {
+        var inputfield_AudioName = Dialog_AddAudio.transform.GetComponentInChildren<InputField>();
+
+        inputfield_AudioName.text = "";
+        Dialog_AddAudio.SetActive(false);
+    }
 
     private void UpdateGestureListView()
     {
@@ -306,6 +332,7 @@ public class UIHandler : MonoBehaviour
             Button_Train.gameObject.SetActive(false);
             Button_Undo.gameObject.SetActive(false);
             Button_Edit.gameObject.SetActive(false);
+            text_Notification.text = "Play the music\nby performing the gesture";
         }
         else
         {
@@ -372,7 +399,13 @@ public class UIHandler : MonoBehaviour
 
     public void SaveGesturesToFile()
     {
-        if (GestureManager.Instance.SaveTrainedData())
+        var inputfield_FileName = Dialog_Save.transform.GetComponentInChildren<InputField>();
+
+        // Not allow null or whitespace as the gesture name.
+        if (String.IsNullOrWhiteSpace(inputfield_FileName.text))
+            return;
+
+        if (GestureManager.Instance.SaveTrainedData(inputfield_FileName.text))
         {
             text_Notification.text = "Saving trained data succeeded.";
         }
@@ -380,6 +413,9 @@ public class UIHandler : MonoBehaviour
         {
             text_Notification.text = "Train must be executed before saving.";
         }
+
+        inputfield_FileName.text = "";
+        CloseSaveDialog();
     }
 
     public void LoadGesturesFromFile(string path)
