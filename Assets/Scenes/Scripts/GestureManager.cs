@@ -144,29 +144,32 @@ public class GestureManager : MonoBehaviour
     {
         Vector3 p = Input.gyro.userAcceleration;
         Quaternion q = Quaternion.FromToRotation(new Vector3(0, 1, 0), Input.gyro.gravity);
-        gr.contdStrokeQ(p, q);  //startStroke() (from StartRead()) -> contdStrokeQ() -> endStroke() (from EndRead())
+
 
         // Linear interpolation
         if (recentP != null)
         {
-            if (recentP == p)
-                return;
-
-            // n : Count of data points
-            int n = 10;
-            for (float i = 0; i < 1; i += 1.0f / n)
+            if (recentP != p)
             {
-                var addP = Vector3.Lerp(recentP, p, i);
-                var addQ = Quaternion.Lerp(recentQ, q, i);
-                gr.contdStrokeQ(addP, addQ);
+                // n : Count of data points
+                int n = 10;
+                float t = 1.0f / n;
+                for (float i = t; i < 0.99f; i += t)
+                {
+                    var addP = Vector3.Lerp(recentP, p, i);
+                    var addQ = Quaternion.Lerp(recentQ, q, i);
+                    gr.contdStrokeQ(addP, addQ);
 
-                Debug.Log($"acc = {addP.x:0.00} {addP.y:0.00} {addP.z:0.00}\n"
-                    + $"grav = {addQ.x:0.00} {addQ.y:0.00} {addQ.z:0.00}");
+                    Debug.Log($"acc = {addP.x:0.00} {addP.y:0.00} {addP.z:0.00}\n"
+                        + $"grav = {addQ.x:0.00} {addQ.y:0.00} {addQ.z:0.00}");
+                }
+
+                recentP = p;
+                recentQ = q;
             }
-
-            recentP = p;
-            recentQ = q;
         }
+
+        gr.contdStrokeQ(p, q);  //startStroke() (from StartRead()) -> contdStrokeQ() -> endStroke() (from EndRead())
 
         Debug.Log($"acc = {p.x:0.00} {p.y:0.00} {p.z:0.00}\n"
                     + $"grav = {q.x:0.00} {q.y:0.00} {q.z:0.00}");
@@ -183,7 +186,7 @@ public class GestureManager : MonoBehaviour
         return identifiedGestureIndex;  //will be used by external class when identifying the gesture.
     }
 
-    public bool Delete(int index)   
+    public bool Delete(int index)
     {
         bool isDeleted = gr.deleteGesture(index);
         if (isDeleted)
