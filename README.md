@@ -51,7 +51,7 @@ Recognition.apk 파일을 다운로드 해 안드로이드 스마트폰에 설�
 <img src=https://user-images.githubusercontent.com/39721769/84846012-d68fa380-b088-11ea-825c-80d1cf9f9bfc.jpg width=200 height=400>
 
 2. Add버튼으로 새로운 제스처를 추가하고 +버튼으로 오디오를 제스처에 매핑한다. 그 후 체크 버튼을 누른다.
-<img src=https://user-images.githubusercontent.com/39721769/84845325-5288ec00-b087-11ea-977d-f95565935f8b.jpg width=200 height=400>
+<img src=https://user-images.githubusercontent.com/39721769/84847561-66831c80-b08c-11ea-8221-5aca4ac4334c.jpg width=200 height=400>
 
 3. 핸드폰을 움직여서 원하는 제스처를 행동한 후 perform버튼을 눌러서 적용한다. 최소 20회 이상 반복하고, 완료되었으면 train 버튼을 눌러 학습시킨다.
 <img src=https://user-images.githubusercontent.com/39721769/84845479-b7dcdd00-b087-11ea-8a0b-43a8d563fc2b.jpg width=200 height=400>
