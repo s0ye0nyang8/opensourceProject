@@ -1,4 +1,4 @@
-# 제스처 인식을 통한 악기 앱 - GyroPad
+# 제스처 인식을 통한 악기 앱 - GyroPad v1.0
 -----
 <img src=https://user-images.githubusercontent.com/39721769/84844142-bf4eb700-b084-11ea-9899-d2eed713b646.jpg width=300 height=600>
 
@@ -18,14 +18,27 @@
    5) Tilt Left
    6) Circle
    7) Check
-### [6.License](#license)
+### [6.Support](#support)
+### [7.Contribution guidelines](#contribution-guidelines)
 *****
 
 
 
 ## [개요](#목차)
 
-핸드폰의 가속도센서를 이용하여 런치패드를 구현하는 어플입니다.
+핸드폰의 가속도센서를 이용하여 런치패드를 구현하는 오픈소스 소프트웨어 어플리케이션이다. 
+
+핸드폰을 쥐고 다양한 제스처를 사용하면 매핑된 음악이 흘러나온다.  
+
+원하는 제스처를 머신러닝을 이용해서 학습, 등록해서 원하는 음악을 재생할 수 있으며 
+
+저장/불러오기로 상황마다 다양한 제스처 세트를 바꿔서 사용할 수 있다.
+
+핸드폰 자체의 좌표계와 중력가속도를 이용한 월드 좌표계를 인식하여 다양한 제스처를 인식할 수 있으며 
+
+데이터의 학습에는 선형보간을 이용해 제스처 인식률을 향상하였다.
+
+본 소프트웨어는 유니티, C#을 이용해 빌드되었다.
 
 ------
 
@@ -33,6 +46,7 @@
 ## [설치](#목차)
 
 Recognition.apk 파일을 다운로드 해 안드로이드 스마트폰에 설치한다.  
+그 후 사용 방법의 설명에 따라 사용한다.
    
 -------
 ## [기능](#목차)
@@ -122,6 +136,16 @@ Recognition.apk 파일을 다운로드 해 안드로이드 스마트폰에 설�
 
 ------
 
-# [License](#목차)
+## [Support](#목차)
 
-<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>
+commit하기 전에 가이드라인을 봐주시길 바랍니다. 
+본 프로젝트에 error가 존재할 경우, 개선 사항이 있을 경우 issue, pull request를 통해 게시해주시면 최대한 빠르게 답변해드리겠습니다.
+
+
+------
+## [Contribution guidelines](#목차)
+
+C#에 대한 코드 수정은 [microsoft c# programming guide](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/)를 참고해주시길 바랍니다.
+
+본 프로젝트에 참여하는 것으로 라이센스와 명시된 사항에 동의하는 것으로 간주합니다.
+
