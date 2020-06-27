@@ -20,6 +20,7 @@
    7) Check
 ### [6.Support](#support)
 ### [7.Contribution guidelines](#contribution-guidelines)
+### [8.License](#license)
 *****
 
 
@@ -149,3 +150,6 @@ C#에 대한 코드 수정은 [microsoft c# programming guide](https://docs.micr
 
 본 프로젝트에 참여하는 것으로 라이센스와 명시된 사항에 동의하는 것으로 간주합니다.
 
+------
+## [License](#목차)
+<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>
